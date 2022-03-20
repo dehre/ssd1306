@@ -38,6 +38,13 @@
  * @details ssd1306 library hardware abstraction layer
  */
 
+// TODO LORIS: remove me
+#ifndef STM32F303xC
+#define STM32F303xC
+#define USE_HAL_DRIVER
+#define STM32F3
+#endif
+
 #include "UserSettings.h"
 #if defined(ARDUINO)
 #include "arduino/io.h"
@@ -47,6 +54,8 @@
 #include "esp/io.h"
 #elif defined(STM32F1) || defined(STM32F2) || defined(STM32F4)
 #include "stm32/io.h"
+#elif defined(STM32F3)
+#include "stm32f3/io.h"
 #elif defined(__linux__)
 #include "linux/io.h"
 #elif defined(__MINGW32__)
@@ -130,5 +139,3 @@ void ssd1306_platform_spiInit(int8_t busId, int8_t cesPin, int8_t dcPin);
  */
 
 #endif
-
-

@@ -121,10 +121,6 @@ static inline void eeprom_write_word(const void *ptr, uint16_t val) // eeprom_wr
 //     return str;
 // }
 
-// !!! PLATFORM I2C IMPLEMENTATION OPTIONAL !!!
-#if defined(CONFIG_PLATFORM_I2C_AVAILABLE) && defined(CONFIG_PLATFORM_I2C_ENABLE)
-    void ssd1306_platform_i2cInit(int8_t busId, uint8_t addr, ssd1306_platform_i2cConfig_t *cfg);
-#endif
 
 // !!! PLATFORM SPI IMPLEMENTATION OPTIONAL !!!
 #if defined(CONFIG_PLATFORM_SPI_AVAILABLE) && defined(CONFIG_PLATFORM_SPI_ENABLE)

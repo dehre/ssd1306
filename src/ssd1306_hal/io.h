@@ -39,9 +39,13 @@
  */
 
 // TODO LORIS: remove me
-#ifndef STM32F3
-#define STM32F3
+#ifndef STM32F303xC
+#define STM32F303xC
+#define USE_HAL_DRIVER
 #endif
+
+// TODO LORIS: remove me
+#define STM32F3
 
 #include "UserSettings.h"
 #if defined(ARDUINO)

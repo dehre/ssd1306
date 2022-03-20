@@ -50,7 +50,7 @@ extern "C"
 {
 #endif
 
-  // clang-format off
+    // clang-format off
 
 // !!! MANDATORY. The library will not work without these functions !!!
 static inline int digitalRead(int pin) // digitalRead()
@@ -123,12 +123,12 @@ static inline void eeprom_write_word(const void *ptr, uint16_t val) // eeprom_wr
 
 // !!! PLATFORM I2C IMPLEMENTATION OPTIONAL !!!
 #if defined(CONFIG_PLATFORM_I2C_AVAILABLE) && defined(CONFIG_PLATFORM_I2C_ENABLE)
-  void ssd1306_platform_i2cInit(int8_t busId, uint8_t addr, ssd1306_platform_i2cConfig_t *cfg);
+    void ssd1306_platform_i2cInit(int8_t busId, uint8_t addr, ssd1306_platform_i2cConfig_t *cfg);
 #endif
 
 // !!! PLATFORM SPI IMPLEMENTATION OPTIONAL !!!
 #if defined(CONFIG_PLATFORM_SPI_AVAILABLE) && defined(CONFIG_PLATFORM_SPI_ENABLE)
-  void ssd1306_platform_spiInit(uint8_t busId, uint8_t cesPin, uint8_t dcPin);
+    void ssd1306_platform_spiInit(uint8_t busId, uint8_t cesPin, uint8_t dcPin);
 #endif
 
 #ifdef __cplusplus
@@ -138,12 +138,12 @@ static inline void eeprom_write_word(const void *ptr, uint16_t val) // eeprom_wr
 #ifdef __cplusplus
 static inline int random(int max) // random(n) - can be skipped if you don't use it
 {
-  return 0;
+    return 0;
 }
 
 static inline int random(int min, int max) // random(a,b) - can be skipped if you don't use it
 {
-  return 0;
+    return 0;
 }
 #endif
 

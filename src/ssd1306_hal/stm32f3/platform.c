@@ -24,52 +24,115 @@
 
 #include "ssd1306_hal/io.h"
 
-// TODO: DON'T FORGET ADD YOUR PLATFORM FILE TO MAKEFILE
-
-#if defined(YOUR_PLATFORM)
+#if defined(SSD1306_STM32F3_PLATFORM)
 
 #include "intf/ssd1306_interface.h"
+#include "stm32f3xx_hal.h"
+
 ////////////////////////////////////////////////////////////////////////////////////////
 // !!! PLATFORM I2C IMPLEMENTATION OPTIONAL !!!
 #if defined(CONFIG_PLATFORM_I2C_AVAILABLE) && defined(CONFIG_PLATFORM_I2C_ENABLE)
-static uint8_t s_i2c_addr = 0x3C;
+
+static uint16_t s_i2c_addr = 0x3C;
+static I2C_HandleTypeDef s_i2c_handle;
+static uint32_t s_i2c_timeout_ms = 1000;
+
+static uint8_t s_buffer[128];
+static uint8_t s_dataSize = 0;
+
+/* This function overwrites the weak symbol in the STM32F3xx_HAL_Driver (stm32f3xx_hal_i2c.c)
+ * Don't rename it.
+ */
+void HAL_I2C_MspInit(I2C_HandleTypeDef *hi2c)
+{
+    __HAL_RCC_GPIOB_CLK_ENABLE();
+    __HAL_RCC_I2C1_CLK_ENABLE();
+
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+    GPIO_InitStruct.Pin = GPIO_PIN_7 | GPIO_PIN_6;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    GPIO_InitStruct.Alternate = GPIO_AF4_I2C1;
+    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+}
+
+/* This function overwrites the weak symbol in the STM32F3xx_HAL_Driver (stm32f3xx_hal_i2c.c)
+ * Don't rename it.
+ */
+void HAL_I2C_MspDeInit(I2C_HandleTypeDef *hi2c)
+{
+    __HAL_RCC_I2C1_CLK_DISABLE();
+    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_7);
+    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_6);
+}
 
 static void platform_i2c_start(void)
 {
-    // ... Open i2c channel for your device with specific s_i2c_addr
+    s_dataSize = 0;
 }
 
 static void platform_i2c_stop(void)
 {
-    // ... Complete i2c communication
+    while (HAL_I2C_Master_Transmit(&s_i2c_handle, (s_i2c_addr << 1), s_buffer, s_dataSize, s_i2c_timeout_ms) != HAL_OK)
+    {
+        if (HAL_I2C_GetError(&s_i2c_handle) != HAL_I2C_ERROR_NONE)
+        {
+            /* Some serious error happened, but we don't care. Our API functions have void type */
+            return;
+        }
+    }
 }
 
 static void platform_i2c_send(uint8_t data)
 {
-    // ... Send byte to i2c communication channel
+    s_buffer[s_dataSize] = data;
+    s_dataSize++;
+    if (s_dataSize == sizeof(s_buffer))
+    {
+        /* Send function puts all data to internal buffer.  *
+         * Restart transmission if internal buffer is full. */
+        ssd1306_intf.stop();
+        ssd1306_intf.start();
+        ssd1306_intf.send(0x40);
+    }
 }
 
 static void platform_i2c_close(void)
 {
-    // ... free all i2c resources here
+    HAL_I2C_MspDeInit(&s_i2c_handle);
 }
 
 static void platform_i2c_send_buffer(const uint8_t *data, uint16_t len)
 {
-    // ... Send len bytes to i2c communication channel here
+    while (len--)
+    {
+        platform_i2c_send(*data);
+        data++;
+    }
 }
 
-void ssd1306_platform_i2cInit(int8_t busId, uint8_t addr, ssd1306_platform_i2cConfig_t * cfg)
+void ssd1306_platform_i2cInit(int8_t busId, uint8_t addr, ssd1306_platform_i2cConfig_t *cfg)
 {
-    if (addr) s_i2c_addr = addr;
+    if (addr)
+        s_i2c_addr = addr;
     ssd1306_intf.spi = 0;
     ssd1306_intf.start = &platform_i2c_start;
-    ssd1306_intf.stop  = &platform_i2c_stop;
-    ssd1306_intf.send  = &platform_i2c_send;
+    ssd1306_intf.stop = &platform_i2c_stop;
+    ssd1306_intf.send = &platform_i2c_send;
     ssd1306_intf.close = &platform_i2c_close;
     ssd1306_intf.send_buffer = &platform_i2c_send_buffer;
-    // init your interface here
-    //...
+
+    s_i2c_handle.Init = (I2C_InitTypeDef){0};
+    s_i2c_handle.Instance = I2C1;
+    s_i2c_handle.Init.Timing = 400000;
+    s_i2c_handle.Init.OwnAddress1 = 0;
+    s_i2c_handle.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+    if (HAL_I2C_Init(&s_i2c_handle) != HAL_OK)
+    {
+        /* Some serious error happened, but we don't care. Our API functions have void type */
+        return;
+    }
 }
 #endif
 
@@ -104,16 +167,16 @@ static void platform_spi_send_buffer(const uint8_t *data, uint16_t len)
     // ... Send len bytes to spi communication channel here
 }
 
-void ssd1306_platform_spiInit(int8_t busId,
-                              int8_t cesPin,
-                              int8_t dcPin)
+void ssd1306_platform_spiInit(int8_t busId, int8_t cesPin, int8_t dcPin)
 {
-    if (cesPin>=0) s_ssd1306_cs = cesPin;
-    if (dcPin>=0) s_ssd1306_dc = dcPin;
+    if (cesPin >= 0)
+        s_ssd1306_cs = cesPin;
+    if (dcPin >= 0)
+        s_ssd1306_dc = dcPin;
     ssd1306_intf.spi = 1;
     ssd1306_intf.start = &platform_spi_start;
-    ssd1306_intf.stop  = &platform_spi_stop;
-    ssd1306_intf.send  = &platform_spi_send;
+    ssd1306_intf.stop = &platform_spi_stop;
+    ssd1306_intf.send = &platform_spi_send;
     ssd1306_intf.close = &platform_spi_close;
     ssd1306_intf.send_buffer = &platform_spi_send_buffer;
     // init your interface here
@@ -121,4 +184,4 @@ void ssd1306_platform_spiInit(int8_t busId,
 }
 #endif
 
-#endif // YOUR_PLATFORM
+#endif // SSD1306_STM32F3_PLATFORM

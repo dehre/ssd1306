@@ -44,10 +44,9 @@
 #define USE_HAL_DRIVER
 #endif
 
-// TODO LORIS: remove me
-#define STM32F3
-
 #include "UserSettings.h"
+#include "stm32f3/targets.h"
+
 #if defined(ARDUINO)
 #include "arduino/io.h"
 #elif defined(__AVR__) && !defined(ARDUINO)

@@ -28,11 +28,13 @@
 
 #include "intf/ssd1306_interface.h"
 #include "stm32f3xx_hal.h"
+#include "periph_pin_map.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // !!! PLATFORM I2C IMPLEMENTATION OPTIONAL !!!
 #if defined(CONFIG_PLATFORM_I2C_AVAILABLE) && defined(CONFIG_PLATFORM_I2C_ENABLE)
 
+static STM32F3_I2C_PinMap s_i2c_pinmap;
 static uint16_t s_i2c_addr = 0x3C;
 static I2C_HandleTypeDef s_i2c_handle;
 static uint32_t s_i2c_timeout_ms = 1000;
@@ -45,16 +47,16 @@ static uint8_t s_dataSize = 0;
  */
 void HAL_I2C_MspInit(I2C_HandleTypeDef *hi2c)
 {
-    __HAL_RCC_GPIOB_CLK_ENABLE();
-    __HAL_RCC_I2C1_CLK_ENABLE();
+    s_i2c_pinmap.gpio_clock_enable();
+    s_i2c_pinmap.i2c_clock_enable();
 
     GPIO_InitTypeDef GPIO_InitStruct = {0};
-    GPIO_InitStruct.Pin = GPIO_PIN_7 | GPIO_PIN_6;
+    GPIO_InitStruct.Pin = s_i2c_pinmap.sda_pin | s_i2c_pinmap.scl_pin;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
     GPIO_InitStruct.Pull = GPIO_PULLUP;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.Alternate = GPIO_AF4_I2C1;
-    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+    GPIO_InitStruct.Alternate = s_i2c_pinmap.gpio_alternate_function;
+    HAL_GPIO_Init(s_i2c_pinmap.gpio_port, &GPIO_InitStruct);
 }
 
 /* This function overwrites the weak symbol in the STM32F3xx_HAL_Driver (stm32f3xx_hal_i2c.c)
@@ -62,9 +64,9 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef *hi2c)
  */
 void HAL_I2C_MspDeInit(I2C_HandleTypeDef *hi2c)
 {
-    __HAL_RCC_I2C1_CLK_DISABLE();
-    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_7);
-    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_6);
+    s_i2c_pinmap.i2c_clock_disable();
+    HAL_GPIO_DeInit(s_i2c_pinmap.gpio_port, s_i2c_pinmap.sda_pin);
+    HAL_GPIO_DeInit(s_i2c_pinmap.gpio_port, s_i2c_pinmap.scl_pin);
 }
 
 static void platform_i2c_start(void)
@@ -123,8 +125,13 @@ void ssd1306_platform_i2cInit(int8_t busId, uint8_t addr, ssd1306_platform_i2cCo
     ssd1306_intf.close = &platform_i2c_close;
     ssd1306_intf.send_buffer = &platform_i2c_send_buffer;
 
+    if (cfg->sda != -1 || cfg->scl != -1)
+        s_i2c_pinmap = s_i2c_pinmap_options[1];
+    else
+        s_i2c_pinmap = s_i2c_pinmap_options[0];
+
     s_i2c_handle.Init = (I2C_InitTypeDef){0};
-    s_i2c_handle.Instance = I2C1;
+    s_i2c_handle.Instance = s_i2c_pinmap.i2c_instance;
     s_i2c_handle.Init.Timing = 400000;
     s_i2c_handle.Init.OwnAddress1 = 0;
     s_i2c_handle.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;

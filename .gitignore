@@ -31,6 +31,3 @@
 # Debug files
 *.dSYM/
 *.d
-
-# TODO LORIS: remove me
-.vscode

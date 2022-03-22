@@ -38,12 +38,6 @@
  * @details ssd1306 library hardware abstraction layer
  */
 
-// TODO LORIS: remove me
-#ifndef STM32F303xC
-#define STM32F303xC
-#define USE_HAL_DRIVER
-#endif
-
 #include "UserSettings.h"
 #include "stm32f3/targets.h"
 
